@@ -23,13 +23,101 @@ canvas.configure(yscrollcommand=scrollbar.set)# Sets the scroll bar
 main_frame = tk.Frame(canvas)
 canvas.create_window((0, 0), window=main_frame, anchor='nw') #Creates a winow in tgge canvas for our stuff
 
+def clear_entries():
+    for entry in [entry_fish_name, entry_category_name, entry_tank_name, entry_compatibility, entry_temp_range, entry_food_name]:
+        entry.delete(0, tk.END)
+
+# Functions to search by name 
+def search_fish():
+    fish_listbox.delete(0, tk.END)
+    fish_name = entry_fish_search.get()
+    cursor.execute('''SELECT Fish.Name, Category.Type, Tank.Size, Fish.Compatibility, Fish.TemperatureRange, Food.Name
+                      FROM Fish
+                      LEFT JOIN Food ON Fish.FoodID = Food.FoodID
+                      LEFT JOIN Tank ON Fish.TankID = Tank.TankID
+                      LEFT JOIN Category ON Fish.CategoryID = Category.CategoryID
+                      WHERE Fish.Name LIKE ?''', (f"%{fish_name}%",))
+    for fish in cursor.fetchall():
+        fish_listbox.insert(tk.END, f"Name: {fish[0]}, Category: {fish[1]}, Tank: {fish[2]}, "
+                                    f"Compatibility: {fish[3]}, Temp Range: {fish[4]}, Food: {fish[5]}")
+
+
+# CRUD functions for adding Fish
+def add_fish():
+    name = entry_fish_name.get()
+    category_name = entry_category_name.get()
+    tank_name = entry_tank_name.get()
+    compatibility = entry_compatibility.get()
+    temp_range = entry_temp_range.get()
+    food_name = entry_food_name.get()
+
+    cursor.execute('''SELECT CategoryID FROM Category WHERE Type = ?''', (category_name,))
+    category_id = cursor.fetchone()
+    cursor.execute('''SELECT TankID FROM Tank WHERE Size = ?''', (tank_name,))
+    tank_id = cursor.fetchone()
+    cursor.execute('''SELECT FoodID FROM Food WHERE Name = ?''', (food_name,))
+    food_id = cursor.fetchone()
+
+    if category_id and tank_id and food_id:
+        cursor.execute("INSERT INTO Fish (Name, CategoryID, TankID, Compatibility, TemperatureRange, FoodID) VALUES (?, ?, ?, ?, ?, ?)", 
+                       (name, category_id[0], tank_id[0], compatibility, temp_range, food_id[0]))
+        connection.commit()
+        messagebox.showinfo("Success", "Fish added successfully.")
+        clear_entries()
+        search_fish()  # Refresh the fish search results after adding
+    else:
+        messagebox.showerror("Error", "Invalid Category, Tank, or Food name.")
+
+
+
+fish_frame = tk.LabelFrame(main_frame, text="Fish Information", padx=10, pady=10)
+fish_frame.grid(row=0, column=0, padx=10, pady=10, sticky='ns')
+
+tk.Label(fish_frame, text="Search Fish by Name").pack()
+entry_fish_search = tk.Entry(fish_frame)
+entry_fish_search.pack()
+tk.Button(fish_frame, text="Search Fish", command=search_fish).pack(pady=2)
+
+scrollbar_fish = tk.Scrollbar(fish_frame)
+fish_listbox = tk.Listbox(fish_frame, yscrollcommand=scrollbar_fish.set, width=60, height=10)
+scrollbar_fish.config(command=fish_listbox.yview)
+scrollbar_fish.pack(side=tk.RIGHT, fill=tk.Y)
+fish_listbox.pack(padx=10, pady=10)
+
+
+tk.Label(fish_frame, text="Fish Name").pack()
+entry_fish_name = tk.Entry(fish_frame)
+entry_fish_name.pack()
+
+tk.Label(fish_frame, text="Category").pack()
+entry_category_name = tk.Entry(fish_frame)
+entry_category_name.pack()
+
+tk.Label(fish_frame, text="Tank Size").pack()
+entry_tank_name = tk.Entry(fish_frame)
+entry_tank_name.pack()
+
+tk.Label(fish_frame, text="Compatibility").pack()
+entry_compatibility = tk.Entry(fish_frame)
+entry_compatibility.pack()
+
+tk.Label(fish_frame, text="Temperature Range").pack()
+entry_temp_range = tk.Entry(fish_frame)
+entry_temp_range.pack()
+
+tk.Label(fish_frame, text="Food").pack()
+entry_food_name = tk.Entry(fish_frame)
+entry_food_name.pack()
+
+# Add Fish Button
+tk.Button(fish_frame, text="Add Fish", command=add_fish).pack(pady=2)
 
 
 # Allow scrolling of the area
 def on_configure(event):
     canvas.configure(scrollregion=canvas.bbox("all")) #Basically the scroll region(Kind of like unity scroll rect)
 
-main_frame.bind("<Configure>", on_configure) #basically allows the above event to be invoked
+main_frame.bind("<Configure>", on_configure) #basically allows
 
 root.mainloop()
 
