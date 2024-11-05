@@ -11,6 +11,11 @@ root = tk.Tk()
 root.title("Fishkeeping Database Management") #Window title
 root.geometry("900x700") #size of window
 
+# I decided to add a title to make it all look a little nicer.
+#Since it is above the canvas it kind of stays at the top which I thought was a nice touch
+title_label = tk.Label(root, text="Fishkeeping Database Management System", font=("Arial", 20, "bold"))
+title_label.pack(pady=10)  # Add padding above and below the title to look fancy smanshy
+
 # Create a Canvas and a scrollbar
 canvas = tk.Canvas(root)
 scrollbar = tk.Scrollbar(root, orient="vertical", command=canvas.yview)#scrollbar to control vertical scrolling(y axis)
