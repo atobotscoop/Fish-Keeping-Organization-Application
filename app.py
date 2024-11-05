@@ -39,6 +39,7 @@ def clear_entries():
 def search_fish():
     fish_listbox.delete(0, tk.END)
     fish_name = entry_fish_search.get()
+      # This query rtrieves fish details from the database that match the entered name
     cursor.execute('''SELECT Fish.Name, Category.Type, Tank.Size, Fish.Compatibility, Fish.TemperatureRange, Food.Name
                       FROM Fish
                       LEFT JOIN Food ON Fish.FoodID = Food.FoodID
@@ -65,6 +66,16 @@ def search_tank():
     cursor.execute("SELECT Size, Type, CurrentFish FROM Tank WHERE Size LIKE ?", (f"%{tank_size}%",))
     for tank in cursor.fetchall():
         tank_listbox.insert(tk.END, f"Size: {tank[0]}, Type: {tank[1]}, Current Fish: {tank[2]}")
+
+    
+def search_category():
+    category_listbox.delete(0, tk.END)
+    category_name = entry_category_search.get()
+    cursor.execute("SELECT Type FROM Category WHERE Type LIKE ?", (f"%{category_name}%",))
+    for category in cursor.fetchall():
+        category_listbox.insert(tk.END, f"Category: {category[0]}")
+
+#################################################################
 
 # CRUD functions for adding Fish, Food, and Tank
 def add_fish():
@@ -123,6 +134,61 @@ def add_tank():
     clear_entries()
     search_tank()  # Refresh the tank search results after adding
 
+def add_category():
+    category_name = entry_new_category_name.get()
+    cursor.execute("INSERT INTO Category (Type) VALUES (?)", (category_name,))
+    connection.commit()
+    messagebox.showinfo("Success", "Category added successfully.")
+    clear_entries()
+    search_category()
+
+#########################################################
+# Delete Functions
+def delete_fish():
+    selected_fish = fish_listbox.curselection()  # Get selected fish index
+    if selected_fish:
+        fish_name = fish_listbox.get(selected_fish[0]).split(",")[0].split(": ")[1]  # Extract fish name
+        cursor.execute("DELETE FROM Fish WHERE Name = ?", (fish_name,))
+        connection.commit()
+        messagebox.showinfo("Success", "Fish deleted successfully.")
+        search_fish()  # Refresh the fish list
+    else:
+        messagebox.showwarning("Warning", "Please select a fish to delete.")
+
+def delete_food():
+    selected_food = food_listbox.curselection()  # Get selected food index
+    if selected_food:
+        food_name = food_listbox.get(selected_food[0]).split(",")[0].split(": ")[1]  # Extract food name
+        cursor.execute("DELETE FROM Food WHERE Name = ?", (food_name,))
+        connection.commit()
+        messagebox.showinfo("Success", "Food deleted successfully.")
+        search_food()  # Refresh the food list
+    else:
+        messagebox.showwarning("Warning", "Please select food to delete.")
+
+def delete_tank():
+    selected_tank = tank_listbox.curselection()  # Get selected tank index
+    if selected_tank:
+        tank_size = tank_listbox.get(selected_tank[0]).split(",")[0].split(": ")[1]  # Extract tank size
+        cursor.execute("DELETE FROM Tank WHERE Size = ?", (tank_size,))
+        connection.commit()
+        messagebox.showinfo("Success", "Tank deleted successfully.")
+        search_tank()  # Refresh the tank list
+    else:
+        messagebox.showwarning("Warning", "Please select a tank to delete.")
+
+def delete_category():
+    selected_category = category_listbox.curselection()  # Get selected category index
+    if selected_category:
+        category_name = category_listbox.get(selected_category[0]).split(": ")[1]  # Extract category name
+        cursor.execute("DELETE FROM Category WHERE Type = ?", (category_name,))
+        connection.commit()
+        messagebox.showinfo("Success", "Category deleted successfully.")
+        search_category()  # Refresh the category list
+    else:
+        messagebox.showwarning("Warning", "Please select a category to delete.")
+#################################################################################
+
 # Scrollable listboxes and search bars for each table
 # Fish Search and Listbox
 fish_frame = tk.LabelFrame(main_frame, text="Fish Information", padx=10, pady=10)
@@ -154,9 +220,9 @@ scrollbar_food.config(command=food_listbox.yview)
 scrollbar_food.pack(side=tk.RIGHT, fill=tk.Y)
 food_listbox.pack(padx=10, pady=10)
 
-# #We can also now search for tanks
+# We can also now search for tanks
 tank_frame = tk.LabelFrame(main_frame, text="Tank Information", padx=10, pady=10)
-tank_frame.grid(row=1, column=0, columnspan=2, padx=10, pady=10, sticky='ns')
+tank_frame.grid(row=1, column=1, padx=10, pady=10, sticky='ns')  # Change column to 1
 
 tk.Label(tank_frame, text="Search Tank by Size").pack()
 entry_tank_search = tk.Entry(tank_frame)
@@ -168,7 +234,6 @@ tank_listbox = tk.Listbox(tank_frame, yscrollcommand=scrollbar_tank.set, width=6
 scrollbar_tank.config(command=tank_listbox.yview)
 scrollbar_tank.pack(side=tk.RIGHT, fill=tk.Y)
 tank_listbox.pack(padx=10, pady=10)
-
 
 # Fish Entry Fields
 tk.Label(fish_frame, text="Fish Name").pack()
@@ -227,8 +292,38 @@ tk.Label(tank_frame, text="Current Fish").pack()
 entry_new_tank_currentfish = tk.Entry(tank_frame)
 entry_new_tank_currentfish.pack()
 
+
 # This is a button to add a tank
 tk.Button(tank_frame, text="Add Tank", command=add_tank).pack(pady=2)
+
+#tank frame
+category_frame = tk.LabelFrame(main_frame, text="Category Information", padx=10, pady=10)
+category_frame.grid(row=1, column=0, padx=10, pady=10, sticky='ns')
+
+tk.Label(category_frame, text="Search Category by Name").pack()
+entry_category_search = tk.Entry(category_frame)
+entry_category_search.pack()
+tk.Button(category_frame, text="Search Category", command=search_category).pack(pady=2)
+
+scrollbar_category = tk.Scrollbar(category_frame)
+category_listbox = tk.Listbox(category_frame, yscrollcommand=scrollbar_category.set, width=40, height=10)
+scrollbar_category.config(command=category_listbox.yview)
+scrollbar_category.pack(side=tk.RIGHT, fill=tk.Y)
+category_listbox.pack(padx=10, pady=10)
+
+tk.Label(category_frame, text="New Category Name").pack()
+entry_new_category_name = tk.Entry(category_frame)
+entry_new_category_name.pack()
+
+#Add category
+tk.Button(category_frame, text="Add Category", command=add_category).pack(pady=2)
+
+
+tk.Button(fish_frame, text="Delete Fish", command=delete_fish).pack(pady=2)
+tk.Button(food_frame, text="Delete Food", command=delete_food).pack(pady=2)
+tk.Button(tank_frame, text="Delete Tank", command=delete_tank).pack(pady=2)
+tk.Button(category_frame, text="Delete Category", command=delete_category).pack(pady=2)
+
 
 
 # Allow scrolling of the area
